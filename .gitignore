@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+pesquisa.db
+uploads/
+exports/
+.env

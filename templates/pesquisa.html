@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesquisa de Qualidade - G4</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 30px 40px; text-align: center; }
+        .header h1 { font-size: 22px; margin-bottom: 5px; }
+        .header p { opacity: 0.7; font-size: 14px; }
+        .container { max-width: 800px; margin: 30px auto; padding: 0 20px 60px; }
+        .card { background: white; border-radius: 12px; padding: 30px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 18px; margin-bottom: 5px; color: #1a1a2e; }
+        .card .subtitle { color: #888; font-size: 13px; margin-bottom: 20px; }
+        label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+        select, textarea { width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; transition: border-color 0.2s; }
+        select:focus, textarea:focus { border-color: #2F5496; outline: none; }
+        textarea { resize: vertical; min-height: 60px; }
+        .form-group { margin-bottom: 18px; }
+        .radio-group { display: flex; gap: 15px; }
+        .radio-option { flex: 1; }
+        .radio-option input { display: none; }
+        .radio-option label { display: flex; align-items: center; justify-content: center; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .radio-option input:checked + label { border-color: #2F5496; background: #eef3fb; color: #2F5496; }
+        .nps-row { display: flex; gap: 6px; justify-content: center; margin: 10px 0; }
+        .nps-btn { width: 38px; height: 38px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+        .nps-btn:hover { border-color: #2F5496; }
+        .nps-btn.selected { background: #2F5496; color: white; border-color: #2F5496; }
+        .nps-btn.det { background: #e74c3c; color: white; border-color: #e74c3c; }
+        .nps-btn.neu { background: #f39c12; color: white; border-color: #f39c12; }
+        .nps-btn.pro { background: #27ae60; color: white; border-color: #27ae60; }
+        .nps-labels { display: flex; justify-content: space-between; font-size: 11px; color: #999; margin-top: 4px; }
+        .area-chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 2px solid #e0e0e0; border-radius: 20px; cursor: pointer; font-size: 13px; margin: 4px; transition: all 0.2s; user-select: none; }
+        .area-chip.selected { border-color: #2F5496; background: #eef3fb; color: #2F5496; }
+        .area-chip.disabled { opacity: 0.4; cursor: not-allowed; }
+        .person-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 2px solid #e0e0e0; border-radius: 20px; cursor: pointer; font-size: 12px; margin: 3px; transition: all 0.2s; user-select: none; }
+        .person-chip.selected { border-color: #2F5496; background: #eef3fb; color: #2F5496; }
+        .person-chip.disabled { opacity: 0.4; cursor: not-allowed; }
+        .area-nps-card { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+        .area-nps-card h3 { font-size: 16px; color: #2F5496; margin-bottom: 10px; }
+        .person-eval { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px; }
+        .person-eval h4 { font-size: 14px; margin-bottom: 8px; }
+        .rec-btns { display: flex; gap: 10px; margin-bottom: 8px; }
+        .rec-btn { padding: 8px 20px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; font-size: 13px; background: white; transition: all 0.2s; }
+        .rec-btn.yes.selected { background: #27ae60; color: white; border-color: #27ae60; }
+        .rec-btn.no.selected { background: #e74c3c; color: white; border-color: #e74c3c; }
+        .btn-submit { display: block; width: 100%; padding: 16px; background: #2F5496; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .btn-submit:hover { background: #1e3a6e; }
+        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+        .progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: #e0e0e0; z-index: 100; }
+        .progress-bar { height: 100%; background: #2F5496; transition: width 0.3s; }
+        .section-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #2F5496; color: white; border-radius: 50%; font-size: 13px; font-weight: 700; margin-right: 8px; }
+        .counter { font-size: 13px; color: #888; margin-top: 8px; }
+        .search-box { width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
+        .search-box:focus { border-color: #2F5496; outline: none; }
+        .msg { padding: 12px 16px; border-radius: 8px; margin: 10px 0; font-size: 14px; }
+        .msg-error { background: #f8d7da; color: #721c24; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="progress"><div class="progress-bar" id="progress-bar" style="width: 0%"></div></div>
+
+    <div class="header">
+        <h1>Pesquisa de Qualidade das Entregas</h1>
+        <p>Sua resposta e anonima e confidencial</p>
+    </div>
+
+    <div class="container">
+        <!-- SECAO 1: Perfil -->
+        <div class="card" id="section-1">
+            <h2><span class="section-num">1</span>Seu Perfil</h2>
+            <p class="subtitle">Essas informacoes ajudam na analise segmentada. Sua identidade permanece anonima.</p>
+
+            <div class="form-group">
+                <label>Qual a sua area?</label>
+                <select id="area-respondente">
+                    <option value="">Selecione sua area...</option>
+                    {% for area in areas %}
+                    <option value="{{ area }}">{{ area }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Qual o seu nivel?</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" name="senioridade" id="sen-li" value="Lideranca">
+                        <label for="sen-li">Lideranca</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="senioridade" id="sen-ci" value="Contribuidor Individual">
+                        <label for="sen-ci">Contribuidor Individual</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECAO 2: Selecao de Areas -->
+        <div class="card" id="section-2">
+            <h2><span class="section-num">2</span>Areas com Maior Interface</h2>
+            <p class="subtitle">Selecione as 5 areas com as quais voce mais trabalha.</p>
+            <div id="areas-chips">
+                {% for area in areas %}
+                <span class="area-chip" data-area="{{ area }}" onclick="toggleArea(this)">{{ area }}</span>
+                {% endfor %}
+            </div>
+            <div class="counter"><span id="areas-count">0</span>/5 areas selecionadas</div>
+        </div>
+
+        <!-- SECAO 3: NPS por Area -->
+        <div class="card hidden" id="section-3">
+            <h2><span class="section-num">3</span>Avaliacao das Areas</h2>
+            <p class="subtitle">Para cada area selecionada, responda: "Em uma nota de 0 a 10, qual a probabilidade de voce recomendar o trabalho desta area para um amigo ou colega de trabalho?"</p>
+            <div id="nps-cards"></div>
+        </div>
+
+        <!-- SECAO 4: Selecao de Pessoas -->
+        <div class="card" id="section-4">
+            <h2><span class="section-num">4</span>Avaliacao Individual</h2>
+            <p class="subtitle">Selecione as 10 pessoas com quem voce mais interage no dia a dia.</p>
+            <input type="text" class="search-box" id="person-search" placeholder="Buscar por nome..." oninput="filterPersons()">
+            <div id="persons-chips">
+                {% for func in funcionarios %}
+                <span class="person-chip" data-name="{{ func }}" onclick="togglePerson(this)">{{ func }}</span>
+                {% endfor %}
+            </div>
+            <div class="counter"><span id="persons-count">0</span>/10 pessoas selecionadas</div>
+        </div>
+
+        <!-- SECAO 5: Avaliacao Individual -->
+        <div class="card hidden" id="section-5">
+            <h2><span class="section-num">5</span>Recomendacao Individual</h2>
+            <p class="subtitle">Para cada pessoa selecionada, indique se voce recomenda ou nao o trabalho dela, e opcionalmente explique o motivo.</p>
+            <div id="person-evals"></div>
+        </div>
+
+        <!-- Enviar -->
+        <div id="error-msg"></div>
+        <button class="btn-submit" id="btn-enviar" onclick="enviar()">Enviar Pesquisa</button>
+    </div>
+
+    <!-- Tela de sucesso -->
+    <div id="success-screen" class="hidden" style="text-align: center; padding: 100px 20px;">
+        <div style="font-size: 48px; margin-bottom: 20px;">&#10003;</div>
+        <h1 style="margin-bottom: 10px;">Obrigado!</h1>
+        <p style="color: #666; font-size: 16px;">Sua resposta foi registrada com sucesso.<br>Agradecemos sua participacao.</p>
+    </div>
+
+    <script>
+        const TOKEN = '{{ token }}';
+        const MAX_AREAS = 5;
+        const MAX_PERSONS = 10;
+
+        let selectedAreas = [];
+        let selectedPersons = [];
+        let npsData = {};
+        let evalData = {};
+
+        function updateProgress() {
+            let steps = 0;
+            if (document.getElementById('area-respondente').value) steps++;
+            if (document.querySelector('input[name="senioridade"]:checked')) steps++;
+            if (selectedAreas.length === MAX_AREAS) steps++;
+            const npsComplete = selectedAreas.length === MAX_AREAS && selectedAreas.every(a => npsData[a] !== undefined);
+            if (npsComplete) steps++;
+            if (selectedPersons.length === MAX_PERSONS) steps++;
+            const evalsComplete = selectedPersons.length === MAX_PERSONS && selectedPersons.every(p => evalData[p] !== undefined && evalData[p].recomenda !== undefined);
+            if (evalsComplete) steps++;
+            document.getElementById('progress-bar').style.width = (steps / 6 * 100) + '%';
+        }
+
+        function toggleArea(el) {
+            const area = el.dataset.area;
+            if (el.classList.contains('selected')) {
+                el.classList.remove('selected');
+                selectedAreas = selectedAreas.filter(a => a !== area);
+                delete npsData[area];
+            } else {
+                if (selectedAreas.length >= MAX_AREAS) return;
+                el.classList.add('selected');
+                selectedAreas.push(area);
+            }
+
+            // Disable/enable chips
+            document.querySelectorAll('.area-chip').forEach(c => {
+                if (!c.classList.contains('selected')) {
+                    c.classList.toggle('disabled', selectedAreas.length >= MAX_AREAS);
+                }
+            });
+
+            document.getElementById('areas-count').textContent = selectedAreas.length;
+
+            // Build NPS cards
+            if (selectedAreas.length === MAX_AREAS) {
+                buildNpsCards();
+                document.getElementById('section-3').classList.remove('hidden');
+            } else {
+                document.getElementById('section-3').classList.add('hidden');
+            }
+            updateProgress();
+        }
+
+        function buildNpsCards() {
+            const container = document.getElementById('nps-cards');
+            container.innerHTML = '';
+            selectedAreas.forEach(area => {
+                const card = document.createElement('div');
+                card.className = 'area-nps-card';
+                card.innerHTML = `
+                    <h3>${area}</h3>
+                    <p style="font-size:13px; color:#666; margin-bottom:10px;">Em uma nota de 0 a 10, sendo 0 a pior nota e 10 a melhor nota, qual a probabilidade de voce recomendar o trabalho da area <strong>${area}</strong> para um amigo ou colega de trabalho?</p>
+                    <div class="nps-row">
+                        ${[0,1,2,3,4,5,6,7,8,9,10].map(n => `<button class="nps-btn" data-area="${area}" data-score="${n}" onclick="selectNps(this)">${n}</button>`).join('')}
+                    </div>
+                    <div class="nps-labels"><span>Nada provavel</span><span>Extremamente provavel</span></div>
+                    <div style="margin-top:10px;">
+                        <textarea placeholder="Comentarios sobre ${area} (opcional)" data-area="${area}" oninput="updateNpsComment(this)"></textarea>
+                    </div>
+                `;
+                container.appendChild(card);
+
+                // Restore previous selection
+                if (npsData[area] !== undefined) {
+                    const btn = card.querySelector(`.nps-btn[data-score="${npsData[area].nota}"]`);
+                    if (btn) styleNpsBtn(btn);
+                }
+            });
+        }
+
+        function selectNps(btn) {
+            const area = btn.dataset.area;
+            const score = parseInt(btn.dataset.score);
+
+            // Clear siblings
+            btn.parentElement.querySelectorAll('.nps-btn').forEach(b => {
+                b.classList.remove('selected', 'det', 'neu', 'pro');
+            });
+
+            styleNpsBtn(btn);
+
+            if (!npsData[area]) npsData[area] = {};
+            npsData[area].nota = score;
+            updateProgress();
+        }
+
+        function styleNpsBtn(btn) {
+            const score = parseInt(btn.dataset.score);
+            if (score <= 6) btn.classList.add('det');
+            else if (score <= 8) btn.classList.add('neu');
+            else btn.classList.add('pro');
+            btn.classList.add('selected');
+        }
+
+        function updateNpsComment(textarea) {
+            const area = textarea.dataset.area;
+            if (!npsData[area]) npsData[area] = {};
+            npsData[area].comentario = textarea.value;
+        }
+
+        function filterPersons() {
+            const query = document.getElementById('person-search').value.toLowerCase();
+            document.querySelectorAll('.person-chip').forEach(chip => {
+                const name = chip.dataset.name.toLowerCase();
+                chip.style.display = name.includes(query) || chip.classList.contains('selected') ? '' : 'none';
+            });
+        }
+
+        function togglePerson(el) {
+            const name = el.dataset.name;
+            if (el.classList.contains('selected')) {
+                el.classList.remove('selected');
+                selectedPersons = selectedPersons.filter(p => p !== name);
+                delete evalData[name];
+            } else {
+                if (selectedPersons.length >= MAX_PERSONS) return;
+                el.classList.add('selected');
+                selectedPersons.push(name);
+            }
+
+            document.querySelectorAll('.person-chip').forEach(c => {
+                if (!c.classList.contains('selected')) {
+                    c.classList.toggle('disabled', selectedPersons.length >= MAX_PERSONS);
+                }
+            });
+
+            document.getElementById('persons-count').textContent = selectedPersons.length;
+
+            if (selectedPersons.length === MAX_PERSONS) {
+                buildPersonEvals();
+                document.getElementById('section-5').classList.remove('hidden');
+            } else {
+                document.getElementById('section-5').classList.add('hidden');
+            }
+            updateProgress();
+        }
+
+        function buildPersonEvals() {
+            const container = document.getElementById('person-evals');
+            container.innerHTML = '';
+            selectedPersons.forEach(name => {
+                const div = document.createElement('div');
+                div.className = 'person-eval';
+                div.innerHTML = `
+                    <h4>${name}</h4>
+                    <p style="font-size:13px; color:#666; margin-bottom:8px;">Voce recomenda o trabalho de <strong>${name}</strong>?</p>
+                    <div class="rec-btns">
+                        <button class="rec-btn yes" data-name="${name}" data-val="1" onclick="selectRec(this)">Recomendo</button>
+                        <button class="rec-btn no" data-name="${name}" data-val="0" onclick="selectRec(this)">Nao recomendo</button>
+                    </div>
+                    <textarea placeholder="Por que? (opcional)" data-name="${name}" oninput="updateRecMotivo(this)"></textarea>
+                `;
+                container.appendChild(div);
+
+                if (evalData[name] && evalData[name].recomenda !== undefined) {
+                    const btnSel = div.querySelector(`.rec-btn[data-val="${evalData[name].recomenda ? 1 : 0}"]`);
+                    if (btnSel) btnSel.classList.add('selected');
+                }
+            });
+        }
+
+        function selectRec(btn) {
+            const name = btn.dataset.name;
+            const val = btn.dataset.val === '1';
+
+            btn.parentElement.querySelectorAll('.rec-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+
+            if (!evalData[name]) evalData[name] = {};
+            evalData[name].recomenda = val;
+            updateProgress();
+        }
+
+        function updateRecMotivo(textarea) {
+            const name = textarea.dataset.name;
+            if (!evalData[name]) evalData[name] = {};
+            evalData[name].motivo = textarea.value;
+        }
+
+        function enviar() {
+            const area_respondente = document.getElementById('area-respondente').value;
+            const senioridade_el = document.querySelector('input[name="senioridade"]:checked');
+            const errorEl = document.getElementById('error-msg');
+
+            if (!area_respondente) {
+                errorEl.innerHTML = '<div class="msg msg-error">Selecione sua area.</div>';
+                return;
+            }
+            if (!senioridade_el) {
+                errorEl.innerHTML = '<div class="msg msg-error">Selecione seu nivel de senioridade.</div>';
+                return;
+            }
+            if (selectedAreas.length !== MAX_AREAS) {
+                errorEl.innerHTML = '<div class="msg msg-error">Selecione exatamente 5 areas.</div>';
+                return;
+            }
+            for (const area of selectedAreas) {
+                if (!npsData[area] || npsData[area].nota === undefined) {
+                    errorEl.innerHTML = '<div class="msg msg-error">Avalie todas as 5 areas selecionadas (nota de 0 a 10).</div>';
+                    return;
+                }
+            }
+            if (selectedPersons.length !== MAX_PERSONS) {
+                errorEl.innerHTML = '<div class="msg msg-error">Selecione exatamente 10 pessoas.</div>';
+                return;
+            }
+            for (const p of selectedPersons) {
+                if (!evalData[p] || evalData[p].recomenda === undefined) {
+                    errorEl.innerHTML = '<div class="msg msg-error">Indique se recomenda ou nao o trabalho de todas as 10 pessoas.</div>';
+                    return;
+                }
+            }
+
+            errorEl.innerHTML = '';
+            document.getElementById('btn-enviar').disabled = true;
+            document.getElementById('btn-enviar').textContent = 'Enviando...';
+
+            const payload = {
+                area_respondente: area_respondente,
+                senioridade: senioridade_el.value,
+                nps_areas: selectedAreas.map(a => ({
+                    area: a,
+                    nota: npsData[a].nota,
+                    comentario: npsData[a].comentario || ''
+                })),
+                avaliacoes: selectedPersons.map(p => ({
+                    nome: p,
+                    recomenda: evalData[p].recomenda,
+                    motivo: evalData[p].motivo || ''
+                }))
+            };
+
+            fetch('/pesquisa/' + TOKEN + '/enviar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.querySelector('.container').classList.add('hidden');
+                    document.querySelector('.header').classList.add('hidden');
+                    document.getElementById('success-screen').classList.remove('hidden');
+                    document.getElementById('progress-bar').style.width = '100%';
+                } else {
+                    errorEl.innerHTML = '<div class="msg msg-error">' + data.error + '</div>';
+                    document.getElementById('btn-enviar').disabled = false;
+                    document.getElementById('btn-enviar').textContent = 'Enviar Pesquisa';
+                }
+            })
+            .catch(() => {
+                errorEl.innerHTML = '<div class="msg msg-error">Erro de conexao. Tente novamente.</div>';
+                document.getElementById('btn-enviar').disabled = false;
+                document.getElementById('btn-enviar').textContent = 'Enviar Pesquisa';
+            });
+        }
+
+        // Listen for changes
+        document.getElementById('area-respondente').addEventListener('change', updateProgress);
+        document.querySelectorAll('input[name="senioridade"]').forEach(r => r.addEventListener('change', updateProgress));
+    </script>
+</body>
+</html>
