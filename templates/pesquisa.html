@@ -65,19 +65,19 @@
 
     <div class="header">
         <h1>Pesquisa de Qualidade das Entregas</h1>
-        <p>Sua resposta e anonima e confidencial</p>
+        <p>Sua resposta é anônima e confidencial</p>
     </div>
 
     <div class="container">
         <!-- SECAO 1: Perfil -->
         <div class="card" id="section-1">
             <h2><span class="section-num">1</span>Seu Perfil</h2>
-            <p class="subtitle">Essas informacoes ajudam na analise segmentada. Sua identidade permanece anonima.</p>
+            <p class="subtitle">Essas informações ajudam na análise segmentada. Sua identidade permanece anônima.</p>
 
             <div class="form-group">
-                <label>Qual a sua area?</label>
+                <label>Qual a sua área?</label>
                 <select id="area-respondente">
-                    <option value="">Selecione sua area...</option>
+                    <option value="">Selecione sua área...</option>
                     {% for area in areas %}
                     <option value="{{ area }}">{{ area }}</option>
                     {% endfor %}
@@ -85,11 +85,11 @@
             </div>
 
             <div class="form-group">
-                <label>Qual o seu nivel?</label>
+                <label>Qual o seu nível?</label>
                 <div class="radio-group">
                     <div class="radio-option">
-                        <input type="radio" name="senioridade" id="sen-li" value="Lideranca">
-                        <label for="sen-li">Lideranca</label>
+                        <input type="radio" name="senioridade" id="sen-li" value="Liderança">
+                        <label for="sen-li">Liderança</label>
                     </div>
                     <div class="radio-option">
                         <input type="radio" name="senioridade" id="sen-ci" value="Contribuidor Individual">
@@ -116,27 +116,27 @@
 
         <!-- SECAO 2: Selecao de Areas -->
         <div class="card" id="section-2">
-            <h2><span class="section-num">2</span>Areas com Maior Interface</h2>
-            <p class="subtitle">Selecione as 5 areas com as quais voce mais trabalha.</p>
+            <h2><span class="section-num">2</span>Áreas com Maior Interface</h2>
+            <p class="subtitle">Selecione as 5 áreas com as quais você mais trabalha.</p>
             <div id="areas-chips">
                 {% for area in areas %}
                 <span class="area-chip" data-area="{{ area }}" onclick="toggleArea(this)">{{ area }}</span>
                 {% endfor %}
             </div>
-            <div class="counter"><span id="areas-count">0</span>/5 areas selecionadas</div>
+            <div class="counter"><span id="areas-count">0</span>/5 áreas selecionadas</div>
         </div>
 
         <!-- SECAO 3: NPS por Area -->
         <div class="card hidden" id="section-3">
-            <h2><span class="section-num">3</span>Avaliacao das Areas</h2>
-            <p class="subtitle">Para cada area selecionada, responda: "Em uma nota de 0 a 10, qual a probabilidade de voce recomendar o trabalho desta area para um amigo ou colega de trabalho?"</p>
+            <h2><span class="section-num">3</span>Avaliação das Áreas</h2>
+            <p class="subtitle">Para cada área selecionada, responda: "Em uma nota de 0 a 10, qual a probabilidade de você recomendar o trabalho desta área para um amigo ou colega de trabalho?"</p>
             <div id="nps-cards"></div>
         </div>
 
         <!-- SECAO 4: Selecao de Pessoas -->
         <div class="card" id="section-4">
-            <h2><span class="section-num">4</span>Avaliacao Individual</h2>
-            <p class="subtitle">Selecione as 10 pessoas com quem voce mais interage no dia a dia.</p>
+            <h2><span class="section-num">4</span>Avaliação Individual</h2>
+            <p class="subtitle">Selecione as 10 pessoas com quem você mais interage no dia a dia.</p>
             <input type="text" class="search-box" id="person-search" placeholder="Buscar por nome..." oninput="filterPersons()">
             <div id="persons-chips">
                 {% for func in funcionarios %}
@@ -148,8 +148,8 @@
 
         <!-- SECAO 5: Avaliacao Individual -->
         <div class="card hidden" id="section-5">
-            <h2><span class="section-num">5</span>Recomendacao Individual</h2>
-            <p class="subtitle">Para cada pessoa selecionada, indique se voce recomenda ou nao o trabalho dela, e opcionalmente explique o motivo.</p>
+            <h2><span class="section-num">5</span>Recomendação Individual</h2>
+            <p class="subtitle">Para cada pessoa selecionada, indique se você recomenda ou não o trabalho dela, e opcionalmente explique o motivo.</p>
             <div id="person-evals"></div>
         </div>
 
@@ -162,7 +162,7 @@
     <div id="success-screen" class="hidden" style="text-align: center; padding: 100px 20px;">
         <div style="font-size: 48px; margin-bottom: 20px;">&#10003;</div>
         <h1 style="margin-bottom: 10px;">Obrigado!</h1>
-        <p style="color: #666; font-size: 16px;">Sua resposta foi registrada com sucesso.<br>Agradecemos sua participacao.</p>
+        <p style="color: #666; font-size: 16px;">Sua resposta foi registrada com sucesso.<br>Agradecemos sua participação.</p>
     </div>
 
     <script>
@@ -228,13 +228,13 @@
                 card.className = 'area-nps-card';
                 card.innerHTML = `
                     <h3>${area}</h3>
-                    <p style="font-size:13px; color:#666; margin-bottom:10px;">Em uma nota de 0 a 10, sendo 0 a pior nota e 10 a melhor nota, qual a probabilidade de voce recomendar o trabalho da area <strong>${area}</strong> para um amigo ou colega de trabalho?</p>
+                    <p style="font-size:13px; color:#666; margin-bottom:10px;">Em uma nota de 0 a 10, sendo 0 a pior nota e 10 a melhor nota, qual a probabilidade de você recomendar o trabalho da área <strong>${area}</strong> para um amigo ou colega de trabalho?</p>
                     <div class="nps-row">
                         ${[0,1,2,3,4,5,6,7,8,9,10].map(n => `<button class="nps-btn" data-area="${area}" data-score="${n}" onclick="selectNps(this)">${n}</button>`).join('')}
                     </div>
-                    <div class="nps-labels"><span>Nada provavel</span><span>Extremamente provavel</span></div>
+                    <div class="nps-labels"><span>Nada provável</span><span>Extremamente provável</span></div>
                     <div style="margin-top:10px;">
-                        <textarea placeholder="Comentarios sobre ${area} (opcional)" data-area="${area}" oninput="updateNpsComment(this)"></textarea>
+                        <textarea placeholder="Comentários sobre ${area} (opcional)" data-area="${area}" oninput="updateNpsComment(this)"></textarea>
                     </div>
                 `;
                 container.appendChild(card);
@@ -322,10 +322,10 @@
                 div.className = 'person-eval';
                 div.innerHTML = `
                     <h4>${name}</h4>
-                    <p style="font-size:13px; color:#666; margin-bottom:8px;">Voce recomenda o trabalho de <strong>${name}</strong>?</p>
+                    <p style="font-size:13px; color:#666; margin-bottom:8px;">Você recomenda o trabalho de <strong>${name}</strong>?</p>
                     <div class="rec-btns">
                         <button class="rec-btn yes" data-name="${name}" data-val="1" onclick="selectRec(this)">Recomendo</button>
-                        <button class="rec-btn no" data-name="${name}" data-val="0" onclick="selectRec(this)">Nao recomendo</button>
+                        <button class="rec-btn no" data-name="${name}" data-val="0" onclick="selectRec(this)">Não recomendo</button>
                     </div>
                     <textarea placeholder="Por que? (opcional)" data-name="${name}" oninput="updateRecMotivo(this)"></textarea>
                 `;
@@ -362,11 +362,11 @@
             const errorEl = document.getElementById('error-msg');
 
             if (!area_respondente) {
-                errorEl.innerHTML = '<div class="msg msg-error">Selecione sua area.</div>';
+                errorEl.innerHTML = '<div class="msg msg-error">Selecione sua área.</div>';
                 return;
             }
             if (!senioridade_el) {
-                errorEl.innerHTML = '<div class="msg msg-error">Selecione seu nivel de senioridade.</div>';
+                errorEl.innerHTML = '<div class="msg msg-error">Selecione seu nível.</div>';
                 return;
             }
             const ano_entrada = document.getElementById('ano-entrada').value;
@@ -375,12 +375,12 @@
                 return;
             }
             if (selectedAreas.length !== MAX_AREAS) {
-                errorEl.innerHTML = '<div class="msg msg-error">Selecione exatamente 5 areas.</div>';
+                errorEl.innerHTML = '<div class="msg msg-error">Selecione exatamente 5 áreas.</div>';
                 return;
             }
             for (const area of selectedAreas) {
                 if (!npsData[area] || npsData[area].nota === undefined) {
-                    errorEl.innerHTML = '<div class="msg msg-error">Avalie todas as 5 areas selecionadas (nota de 0 a 10).</div>';
+                    errorEl.innerHTML = '<div class="msg msg-error">Avalie todas as 5 áreas selecionadas (nota de 0 a 10).</div>';
                     return;
                 }
             }
@@ -390,7 +390,7 @@
             }
             for (const p of selectedPersons) {
                 if (!evalData[p] || evalData[p].recomenda === undefined) {
-                    errorEl.innerHTML = '<div class="msg msg-error">Indique se recomenda ou nao o trabalho de todas as 10 pessoas.</div>';
+                    errorEl.innerHTML = '<div class="msg msg-error">Indique se recomenda ou não o trabalho de todas as 10 pessoas.</div>';
                     return;
                 }
             }
@@ -434,7 +434,7 @@
                 }
             })
             .catch(() => {
-                errorEl.innerHTML = '<div class="msg msg-error">Erro de conexao. Tente novamente.</div>';
+                errorEl.innerHTML = '<div class="msg msg-error">Erro de conexão. Tente novamente.</div>';
                 document.getElementById('btn-enviar').disabled = false;
                 document.getElementById('btn-enviar').textContent = 'Enviar Pesquisa';
             });

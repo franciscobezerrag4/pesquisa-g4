@@ -137,11 +137,11 @@ def pesquisa(token):
 
     if not t:
         conn.close()
-        return render_template('erro.html', msg='Link invalido. Verifique o link recebido.')
+        return render_template('erro.html', msg='Link inválido. Verifique o link recebido.')
 
     if t['usado']:
         conn.close()
-        return render_template('erro.html', msg='Este link ja foi utilizado. Cada pessoa pode responder apenas uma vez.')
+        return render_template('erro.html', msg='Este link já foi utilizado. Cada pessoa pode responder apenas uma vez.')
 
     areas = [r['nome'] for r in conn.execute('SELECT nome FROM areas ORDER BY nome').fetchall()]
     funcs = [r['nome'] for r in conn.execute('SELECT nome FROM funcionarios ORDER BY nome').fetchall()]
@@ -157,22 +157,22 @@ def enviar_resposta(token):
 
     if not t:
         conn.close()
-        return jsonify({'error': 'Token invalido'}), 400
+        return jsonify({'error': 'Token inválido'}), 400
 
     if t['usado']:
         conn.close()
-        return jsonify({'error': 'Este link ja foi utilizado'}), 400
+        return jsonify({'error': 'Este link já foi utilizado'}), 400
 
     data = request.get_json()
 
     if not data.get('area_respondente') or not data.get('senioridade'):
-        return jsonify({'error': 'Area e senioridade sao obrigatorios'}), 400
+        return jsonify({'error': 'Área e nível são obrigatórios'}), 400
 
     if not data.get('ano_entrada'):
-        return jsonify({'error': 'Ano de entrada e obrigatorio'}), 400
+        return jsonify({'error': 'Ano de entrada é obrigatório'}), 400
 
     if not data.get('nps_areas') or len(data['nps_areas']) != 5:
-        return jsonify({'error': 'Selecione exatamente 5 areas e avalie todas'}), 400
+        return jsonify({'error': 'Selecione exatamente 5 áreas e avalie todas'}), 400
 
     if not data.get('avaliacoes') or len(data['avaliacoes']) != 10:
         return jsonify({'error': 'Selecione exatamente 10 pessoas para avaliar'}), 400
@@ -272,7 +272,7 @@ def gerar_tokens():
     quantidade = int(data.get('quantidade', 0))
 
     if quantidade <= 0 or quantidade > 500:
-        return jsonify({'error': 'Quantidade invalida (1-500)'}), 400
+        return jsonify({'error': 'Quantidade inválida (1-500)'}), 400
 
     conn = get_db()
     tokens = []
