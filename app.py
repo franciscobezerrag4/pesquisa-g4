@@ -81,6 +81,7 @@ def init_db():
             token_id INTEGER NOT NULL,
             area_respondente TEXT NOT NULL,
             senioridade TEXT NOT NULL,
+            ano_entrada TEXT,
             criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (token_id) REFERENCES tokens(id)
         );
@@ -106,6 +107,20 @@ def init_db():
 
 
 init_db()
+
+
+# Migration: add ano_entrada column if not exists
+def migrate_db():
+    conn = get_db()
+    try:
+        conn.execute('SELECT ano_entrada FROM respostas LIMIT 1')
+    except sqlite3.OperationalError:
+        conn.execute('ALTER TABLE respostas ADD COLUMN ano_entrada TEXT')
+        conn.commit()
+    conn.close()
+
+
+migrate_db()
 
 
 # === ROTAS PUBLICAS (pesquisa) ===
@@ -153,6 +168,9 @@ def enviar_resposta(token):
     if not data.get('area_respondente') or not data.get('senioridade'):
         return jsonify({'error': 'Area e senioridade sao obrigatorios'}), 400
 
+    if not data.get('ano_entrada'):
+        return jsonify({'error': 'Ano de entrada e obrigatorio'}), 400
+
     if not data.get('nps_areas') or len(data['nps_areas']) != 5:
         return jsonify({'error': 'Selecione exatamente 5 areas e avalie todas'}), 400
 
@@ -166,8 +184,8 @@ def enviar_resposta(token):
             return jsonify({'error': 'Notas devem ser entre 0 e 10'}), 400
 
     cursor = conn.execute(
-        'INSERT INTO respostas (token_id, area_respondente, senioridade) VALUES (?, ?, ?)',
-        (t['id'], data['area_respondente'], data['senioridade'])
+        'INSERT INTO respostas (token_id, area_respondente, senioridade, ano_entrada) VALUES (?, ?, ?, ?)',
+        (t['id'], data['area_respondente'], data['senioridade'], data.get('ano_entrada', ''))
     )
     resposta_id = cursor.lastrowid
 
@@ -394,11 +412,11 @@ def exportar_resultados():
 
     # Aba 2: NPS Detalhado
     ws2 = wb.create_sheet('Respostas NPS Detalhadas')
-    headers2 = ['Resposta #', 'Area do Respondente', 'Senioridade', 'Area Avaliada', 'Nota', 'Comentario', 'Data']
+    headers2 = ['Resposta #', 'Area do Respondente', 'Senioridade', 'Ano de Entrada', 'Area Avaliada', 'Nota', 'Comentario', 'Data']
     style_header(ws2, headers2)
 
     detalhes = conn.execute('''
-        SELECT r.id, r.area_respondente, r.senioridade, n.area_avaliada, n.nota, n.comentario, r.criado_em
+        SELECT r.id, r.area_respondente, r.senioridade, r.ano_entrada, n.area_avaliada, n.nota, n.comentario, r.criado_em
         FROM respostas r
         JOIN nps_areas n ON n.resposta_id = r.id
         ORDER BY r.id, n.area_avaliada
@@ -408,12 +426,13 @@ def exportar_resultados():
         ws2.cell(row=i, column=1, value=d['id'])
         ws2.cell(row=i, column=2, value=d['area_respondente'])
         ws2.cell(row=i, column=3, value=d['senioridade'])
-        ws2.cell(row=i, column=4, value=d['area_avaliada'])
-        ws2.cell(row=i, column=5, value=d['nota'])
-        ws2.cell(row=i, column=6, value=d['comentario'])
-        ws2.cell(row=i, column=7, value=d['criado_em'])
+        ws2.cell(row=i, column=4, value=d['ano_entrada'])
+        ws2.cell(row=i, column=5, value=d['area_avaliada'])
+        ws2.cell(row=i, column=6, value=d['nota'])
+        ws2.cell(row=i, column=7, value=d['comentario'])
+        ws2.cell(row=i, column=8, value=d['criado_em'])
 
-    for col in 'ABCDEFG':
+    for col in 'ABCDEFGH':
         ws2.column_dimensions[col].width = 22
 
     # Aba 3: NPS por Senioridade
@@ -473,11 +492,11 @@ def exportar_resultados():
 
     # Aba 5: Individuais Detalhado
     ws5 = wb.create_sheet('Individuais Detalhado')
-    headers5 = ['Resposta #', 'Area do Respondente', 'Senioridade', 'Funcionario Avaliado', 'Recomenda', 'Motivo', 'Data']
+    headers5 = ['Resposta #', 'Area do Respondente', 'Senioridade', 'Ano de Entrada', 'Funcionario Avaliado', 'Recomenda', 'Motivo', 'Data']
     style_header(ws5, headers5)
 
     ind_det = conn.execute('''
-        SELECT r.id, r.area_respondente, r.senioridade, a.funcionario_avaliado, a.recomenda, a.motivo, r.criado_em
+        SELECT r.id, r.area_respondente, r.senioridade, r.ano_entrada, a.funcionario_avaliado, a.recomenda, a.motivo, r.criado_em
         FROM respostas r
         JOIN avaliacoes_individuais a ON a.resposta_id = r.id
         ORDER BY r.id, a.funcionario_avaliado
@@ -487,12 +506,13 @@ def exportar_resultados():
         ws5.cell(row=i, column=1, value=d['id'])
         ws5.cell(row=i, column=2, value=d['area_respondente'])
         ws5.cell(row=i, column=3, value=d['senioridade'])
-        ws5.cell(row=i, column=4, value=d['funcionario_avaliado'])
-        ws5.cell(row=i, column=5, value='Sim' if d['recomenda'] else 'Nao')
-        ws5.cell(row=i, column=6, value=d['motivo'])
-        ws5.cell(row=i, column=7, value=d['criado_em'])
+        ws5.cell(row=i, column=4, value=d['ano_entrada'])
+        ws5.cell(row=i, column=5, value=d['funcionario_avaliado'])
+        ws5.cell(row=i, column=6, value='Sim' if d['recomenda'] else 'Nao')
+        ws5.cell(row=i, column=7, value=d['motivo'])
+        ws5.cell(row=i, column=8, value=d['criado_em'])
 
-    for col in 'ABCDEFG':
+    for col in 'ABCDEFGH':
         ws5.column_dimensions[col].width = 22
 
     # Aba 6: Comentarios
