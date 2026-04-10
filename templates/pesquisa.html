@@ -55,13 +55,17 @@
         .counter { display: inline-block; padding: 6px 14px; border-radius: 20px; background: #fff3cd; color: #856404; font-size: 13px; font-weight: 600; margin-top: 12px; border: 1.5px solid #ffeaa7; }
         .counter.complete { background: #d4edda; color: #155724; border-color: #c3e6cb; }
         .required-badge { display: inline-block; background: #2F5496; color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; margin-left: 8px; vertical-align: middle; letter-spacing: 0.3px; }
-        .search-box { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 4px; }
+        .search-box { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
         .search-box:focus { border-color: #2F5496; outline: none; }
-        .search-results { max-height: 280px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; background: white; }
-        .search-results.empty { display: none; }
-        .search-result { padding: 10px 14px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
-        .search-result:hover { background: #eef3fb; }
-        .search-result:last-child { border-bottom: none; }
+        .person-list { max-height: 320px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 8px; background: #fafbfc; }
+        .person-row { padding: 9px 12px; cursor: pointer; font-size: 13px; border-radius: 6px; transition: background 0.12s; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .person-row:hover { background: #eef3fb; }
+        .person-row .add-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: #2F5496; color: white; border-radius: 50%; font-size: 15px; font-weight: 700; line-height: 1; opacity: 0; transition: opacity 0.12s; flex-shrink: 0; }
+        .person-row:hover .add-icon { opacity: 1; }
+        .person-row.disabled { opacity: 0.4; cursor: not-allowed; }
+        .person-row.disabled:hover { background: transparent; }
+        .person-row.disabled .add-icon { display: none; }
+        .person-list-empty { padding: 20px; text-align: center; color: #aaa; font-size: 13px; font-style: italic; }
         .selected-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; min-height: 10px; }
         .selected-item { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #2F5496; color: white; border-radius: 20px; font-size: 13px; font-weight: 500; }
         .selected-item .remove-btn { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: rgba(255,255,255,0.25); border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 1; font-weight: 700; }
@@ -160,10 +164,10 @@
             <h2><span class="section-num">4</span>Avaliação Individual <span class="required-badge" style="background:#888;">OPCIONAL</span></h2>
             <p class="subtitle">
                 Esta seção é <strong>opcional</strong>. Se quiser, avalie até <strong>10 pessoas</strong> com quem você mais interage no dia a dia.
-                Você pode pular esta seção, avaliar 1, 5 ou as 10 pessoas — fica a seu critério.
+                Você pode pular esta seção, ou avaliar quantas quiser (até 10) — fica a seu critério.
             </p>
-            <input type="text" class="search-box" id="person-search" placeholder="Digite o nome para buscar..." oninput="searchPersons()" onfocus="searchPersons()">
-            <div class="search-results empty" id="search-results"></div>
+            <input type="text" class="search-box" id="person-search" placeholder="Buscar por nome (digite para filtrar)..." autocomplete="off" oninput="renderPersonList()">
+            <div class="person-list" id="person-list"></div>
             <div class="selected-list" id="selected-persons">
                 <div class="empty-state">Nenhuma pessoa selecionada ainda (opcional).</div>
             </div>
@@ -304,44 +308,36 @@
             npsData[area].comentario = textarea.value;
         }
 
-        function searchPersons() {
+        function renderPersonList() {
             const query = normalize(document.getElementById('person-search').value).trim();
-            const results = document.getElementById('search-results');
+            const list = document.getElementById('person-list');
+            const limitReached = selectedPersons.length >= MAX_PERSONS;
 
-            if (selectedPersons.length >= MAX_PERSONS) {
-                results.innerHTML = '<div class="search-result" style="cursor:default;color:#888;">Limite de 10 pessoas atingido. Remova alguém para adicionar outra.</div>';
-                results.classList.remove('empty');
+            const filtered = query.length === 0
+                ? ALL_PERSONS
+                : ALL_PERSONS.filter(p => normalize(p).includes(query));
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="person-list-empty">Nenhuma pessoa encontrada.</div>';
                 return;
             }
 
-            if (query.length < 2) {
-                results.classList.add('empty');
-                results.innerHTML = '';
-                return;
-            }
-
-            const matches = ALL_PERSONS
-                .filter(p => normalize(p).includes(query) && !selectedPersons.includes(p))
-                .slice(0, 30);
-
-            if (matches.length === 0) {
-                results.innerHTML = '<div class="search-result" style="cursor:default;color:#888;">Nenhuma pessoa encontrada.</div>';
-            } else {
-                results.innerHTML = matches.map(name =>
-                    `<div class="search-result" onclick="addPerson('${name.replace(/'/g, "\\'")}')">${name}</div>`
-                ).join('');
-            }
-            results.classList.remove('empty');
+            list.innerHTML = filtered.map(name => {
+                const isSelected = selectedPersons.includes(name);
+                const disabled = isSelected || limitReached;
+                const escaped = name.replace(/'/g, "\\'");
+                const onClick = disabled ? '' : `onclick="addPerson('${escaped}')"`;
+                const label = isSelected ? '<span style="font-size:11px;color:#27ae60;font-weight:600;">JÁ SELECIONADA</span>' : '<span class="add-icon">+</span>';
+                return `<div class="person-row ${disabled ? 'disabled' : ''}" ${onClick}><span>${name}</span>${label}</div>`;
+            }).join('');
         }
 
         function addPerson(name) {
             if (selectedPersons.length >= MAX_PERSONS) return;
             if (selectedPersons.includes(name)) return;
             selectedPersons.push(name);
-            document.getElementById('person-search').value = '';
-            document.getElementById('search-results').classList.add('empty');
-            document.getElementById('search-results').innerHTML = '';
             renderSelectedPersons();
+            renderPersonList();
             updatePersonsState();
         }
 
@@ -349,6 +345,7 @@
             selectedPersons = selectedPersons.filter(p => p !== name);
             delete evalData[name];
             renderSelectedPersons();
+            renderPersonList();
             updatePersonsState();
         }
 
@@ -446,7 +443,7 @@
                 }
             }
             if (selectedPersons.length > MAX_PERSONS) {
-                errorEl.innerHTML = '<div class="msg msg-error">Você pode avaliar no máximo 10 pessoas.</div>';
+                errorEl.innerHTML = '<div class="msg msg-error">Você pode avaliar no máximo 5 pessoas.</div>';
                 return;
             }
             for (const p of selectedPersons) {
@@ -505,6 +502,13 @@
         document.getElementById('area-respondente').addEventListener('change', updateProgress);
         document.getElementById('ano-entrada').addEventListener('change', updateProgress);
         document.querySelectorAll('input[name="senioridade"]').forEach(r => r.addEventListener('change', updateProgress));
+
+        // Initialize the visible person list and clear any autofill
+        window.addEventListener('load', () => {
+            const searchInput = document.getElementById('person-search');
+            if (searchInput) searchInput.value = '';
+            renderPersonList();
+        });
     </script>
 </body>
 </html>
