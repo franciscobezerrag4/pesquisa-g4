@@ -66,6 +66,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS funcionarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
+            email TEXT,
             area_id INTEGER,
             FOREIGN KEY (area_id) REFERENCES areas(id)
         );
@@ -121,6 +122,16 @@ def migrate_db():
         conn.execute('SELECT pessoa_nome FROM tokens LIMIT 1')
     except sqlite3.OperationalError:
         conn.execute('ALTER TABLE tokens ADD COLUMN pessoa_nome TEXT')
+        conn.commit()
+    try:
+        conn.execute('SELECT email FROM funcionarios LIMIT 1')
+    except sqlite3.OperationalError:
+        conn.execute('ALTER TABLE funcionarios ADD COLUMN email TEXT')
+        conn.commit()
+    try:
+        conn.execute('SELECT pessoa_email FROM tokens LIMIT 1')
+    except sqlite3.OperationalError:
+        conn.execute('ALTER TABLE tokens ADD COLUMN pessoa_email TEXT')
         conn.commit()
     conn.close()
 
@@ -253,13 +264,14 @@ def upload_excel():
         for row in ws.iter_rows(min_row=2, values_only=True):
             if row[0]:
                 nome = str(row[0]).strip()
-                area_nome = str(row[1]).strip() if row[1] else None
+                area_nome = str(row[1]).strip() if len(row) > 1 and row[1] else None
+                email = str(row[2]).strip() if len(row) > 2 and row[2] else None
                 area_id = None
                 if area_nome:
                     r = conn.execute('SELECT id FROM areas WHERE nome = ?', (area_nome,)).fetchone()
                     if r:
                         area_id = r['id']
-                conn.execute('INSERT INTO funcionarios (nome, area_id) VALUES (?, ?)', (nome, area_id))
+                conn.execute('INSERT INTO funcionarios (nome, email, area_id) VALUES (?, ?, ?)', (nome, email, area_id))
 
     conn.commit()
 
@@ -298,7 +310,7 @@ def gerar_tokens():
 @auth_required
 def gerar_tokens_pessoas():
     conn = get_db()
-    funcs = conn.execute('SELECT nome FROM funcionarios ORDER BY nome').fetchall()
+    funcs = conn.execute('SELECT nome, email FROM funcionarios ORDER BY nome').fetchall()
 
     if not funcs:
         conn.close()
@@ -307,6 +319,7 @@ def gerar_tokens_pessoas():
     criados = []
     for f in funcs:
         nome = f['nome']
+        email = f['email']
         existente = conn.execute(
             'SELECT token FROM tokens WHERE pessoa_nome = ?', (nome,)
         ).fetchone()
@@ -314,15 +327,19 @@ def gerar_tokens_pessoas():
             continue
         token = secrets.token_urlsafe(16)
         conn.execute(
-            'INSERT INTO tokens (token, pessoa_nome) VALUES (?, ?)', (token, nome)
+            'INSERT INTO tokens (token, pessoa_nome, pessoa_email) VALUES (?, ?, ?)',
+            (token, nome, email)
         )
-        criados.append({'nome': nome, 'token': token})
+        criados.append({'nome': nome, 'email': email, 'token': token})
 
     conn.commit()
     conn.close()
 
     base_url = request.host_url.rstrip('/')
-    result = [{'nome': c['nome'], 'link': f"{base_url}/pesquisa/{c['token']}"} for c in criados]
+    result = [
+        {'nome': c['nome'], 'email': c['email'] or '', 'link': f"{base_url}/pesquisa/{c['token']}"}
+        for c in criados
+    ]
 
     return jsonify({
         'success': True,
@@ -337,7 +354,7 @@ def gerar_tokens_pessoas():
 def exportar_tokens():
     conn = get_db()
     tokens = conn.execute(
-        'SELECT token, pessoa_nome, usado, criado_em FROM tokens ORDER BY pessoa_nome, id'
+        'SELECT token, pessoa_nome, pessoa_email, usado, criado_em FROM tokens ORDER BY pessoa_nome, id'
     ).fetchall()
     conn.close()
 
@@ -348,7 +365,7 @@ def exportar_tokens():
     header_font = Font(bold=True, color='FFFFFF')
     header_fill = PatternFill(start_color='2F5496', end_color='2F5496', fill_type='solid')
 
-    headers = ['#', 'Pessoa', 'Link da Pesquisa', 'Status', 'Criado em']
+    headers = ['#', 'Pessoa', 'Email', 'Link da Pesquisa', 'Status', 'Criado em']
     for col, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=h)
         cell.font = header_font
@@ -359,15 +376,17 @@ def exportar_tokens():
     for i, t in enumerate(tokens, 1):
         ws.cell(row=i+1, column=1, value=i)
         ws.cell(row=i+1, column=2, value=t['pessoa_nome'] or '(anônimo)')
-        ws.cell(row=i+1, column=3, value=f"{base_url}/pesquisa/{t['token']}")
-        ws.cell(row=i+1, column=4, value='Respondido' if t['usado'] else 'Pendente')
-        ws.cell(row=i+1, column=5, value=t['criado_em'])
+        ws.cell(row=i+1, column=3, value=t['pessoa_email'] or '')
+        ws.cell(row=i+1, column=4, value=f"{base_url}/pesquisa/{t['token']}")
+        ws.cell(row=i+1, column=5, value='Respondido' if t['usado'] else 'Pendente')
+        ws.cell(row=i+1, column=6, value=t['criado_em'])
 
     ws.column_dimensions['A'].width = 5
     ws.column_dimensions['B'].width = 35
-    ws.column_dimensions['C'].width = 60
-    ws.column_dimensions['D'].width = 15
-    ws.column_dimensions['E'].width = 20
+    ws.column_dimensions['C'].width = 35
+    ws.column_dimensions['D'].width = 60
+    ws.column_dimensions['E'].width = 15
+    ws.column_dimensions['F'].width = 20
 
     filepath = os.path.join(EXPORT_FOLDER, 'tokens_pesquisa.xlsx')
     wb.save(filepath)
