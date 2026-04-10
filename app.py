@@ -79,12 +79,10 @@ def init_db():
         );
         CREATE TABLE IF NOT EXISTS respostas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            token_id INTEGER NOT NULL,
             area_respondente TEXT NOT NULL,
             senioridade TEXT NOT NULL,
             ano_entrada TEXT,
-            criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (token_id) REFERENCES tokens(id)
+            criado_em TEXT DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS nps_areas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -133,6 +131,14 @@ def migrate_db():
     except sqlite3.OperationalError:
         conn.execute('ALTER TABLE tokens ADD COLUMN pessoa_email TEXT')
         conn.commit()
+    # Drop token_id from respostas to guarantee true anonymity (no link back to person)
+    try:
+        cols = [r[1] for r in conn.execute('PRAGMA table_info(respostas)').fetchall()]
+        if 'token_id' in cols:
+            conn.execute('ALTER TABLE respostas DROP COLUMN token_id')
+            conn.commit()
+    except sqlite3.OperationalError:
+        pass
     conn.close()
 
 
@@ -190,8 +196,9 @@ def enviar_resposta(token):
     if not data.get('nps_areas') or len(data['nps_areas']) != 5:
         return jsonify({'error': 'Selecione exatamente 5 áreas e avalie todas'}), 400
 
-    if not data.get('avaliacoes') or len(data['avaliacoes']) != 10:
-        return jsonify({'error': 'Selecione exatamente 10 pessoas para avaliar'}), 400
+    avaliacoes = data.get('avaliacoes') or []
+    if len(avaliacoes) > 10:
+        return jsonify({'error': 'Você pode avaliar no máximo 10 pessoas'}), 400
 
     # Valida que notas sao inteiros 0-10
     for nps in data['nps_areas']:
@@ -199,9 +206,11 @@ def enviar_resposta(token):
         if not isinstance(nota, int) or nota < 0 or nota > 10:
             return jsonify({'error': 'Notas devem ser entre 0 e 10'}), 400
 
+    # IMPORTANTE: a resposta NÃO é vinculada ao token (anonimato real garantido).
+    # O token é apenas marcado como usado, em uma operação separada.
     cursor = conn.execute(
-        'INSERT INTO respostas (token_id, area_respondente, senioridade, ano_entrada) VALUES (?, ?, ?, ?)',
-        (t['id'], data['area_respondente'], data['senioridade'], data.get('ano_entrada', ''))
+        'INSERT INTO respostas (area_respondente, senioridade, ano_entrada) VALUES (?, ?, ?)',
+        (data['area_respondente'], data['senioridade'], data.get('ano_entrada', ''))
     )
     resposta_id = cursor.lastrowid
 
@@ -211,7 +220,7 @@ def enviar_resposta(token):
             (resposta_id, nps['area'], nps['nota'], nps.get('comentario', ''))
         )
 
-    for av in data['avaliacoes']:
+    for av in avaliacoes:
         conn.execute(
             'INSERT INTO avaliacoes_individuais (resposta_id, funcionario_avaliado, recomenda, motivo) VALUES (?, ?, ?, ?)',
             (resposta_id, av['nome'], 1 if av['recomenda'] else 0, av.get('motivo', ''))

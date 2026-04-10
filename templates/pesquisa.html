@@ -77,10 +77,20 @@
 
     <div class="header">
         <h1>Pesquisa de Qualidade das Entregas</h1>
-        <p>Sua resposta é anônima e confidencial</p>
+        <p>Sua resposta é 100% anônima e não pode ser rastreada</p>
     </div>
 
     <div class="container">
+        <div class="card" style="background:#eef3fb; border-left:4px solid #2F5496;">
+            <h2 style="color:#2F5496; font-size:16px;">🔒 Anonimato garantido</h2>
+            <p class="subtitle" style="margin-bottom:0;">
+                Suas respostas <strong>não são associadas ao seu nome ou email em nenhum momento</strong>.
+                O link que você recebeu é descartado após o envio e os dados ficam armazenados sem qualquer
+                vínculo com a pessoa que respondeu — nem o administrador do sistema consegue rastrear quem disse o quê.
+                Pode responder com total liberdade.
+            </p>
+        </div>
+
         <!-- SECAO 1: Perfil -->
         <div class="card" id="section-1">
             <h2><span class="section-num">1</span>Seu Perfil</h2>
@@ -147,20 +157,23 @@
 
         <!-- SECAO 4: Selecao de Pessoas -->
         <div class="card" id="section-4">
-            <h2><span class="section-num">4</span>Avaliação Individual<span class="required-badge">OBRIGATÓRIO</span></h2>
-            <p class="subtitle">Selecione <strong>exatamente 10 pessoas</strong> com quem você mais interage no dia a dia. Digite para buscar e clique para adicionar.</p>
+            <h2><span class="section-num">4</span>Avaliação Individual <span class="required-badge" style="background:#888;">OPCIONAL</span></h2>
+            <p class="subtitle">
+                Esta seção é <strong>opcional</strong>. Se quiser, avalie até <strong>10 pessoas</strong> com quem você mais interage no dia a dia.
+                Você pode pular esta seção, avaliar 1, 5 ou as 10 pessoas — fica a seu critério.
+            </p>
             <input type="text" class="search-box" id="person-search" placeholder="Digite o nome para buscar..." oninput="searchPersons()" onfocus="searchPersons()">
             <div class="search-results empty" id="search-results"></div>
             <div class="selected-list" id="selected-persons">
-                <div class="empty-state">Nenhuma pessoa selecionada ainda.</div>
+                <div class="empty-state">Nenhuma pessoa selecionada ainda (opcional).</div>
             </div>
-            <div class="counter" id="persons-counter"><span id="persons-count">0</span> de 10 pessoas selecionadas</div>
+            <div class="counter complete" id="persons-counter"><span id="persons-count">0</span> de até 10 pessoas selecionadas</div>
         </div>
 
         <!-- SECAO 5: Avaliacao Individual -->
         <div class="card hidden" id="section-5">
             <h2><span class="section-num">5</span>Recomendação Individual</h2>
-            <p class="subtitle">Para cada pessoa selecionada, indique se você recomenda ou não o trabalho dela, e opcionalmente explique o motivo.</p>
+            <p class="subtitle">Para cada pessoa que você selecionou acima, indique se recomenda ou não o trabalho dela. O motivo é opcional.</p>
             <div id="person-evals"></div>
         </div>
 
@@ -199,10 +212,7 @@
             if (selectedAreas.length === MAX_AREAS) steps++;
             const npsComplete = selectedAreas.length === MAX_AREAS && selectedAreas.every(a => npsData[a] !== undefined);
             if (npsComplete) steps++;
-            if (selectedPersons.length === MAX_PERSONS) steps++;
-            const evalsComplete = selectedPersons.length === MAX_PERSONS && selectedPersons.every(p => evalData[p] !== undefined && evalData[p].recomenda !== undefined);
-            if (evalsComplete) steps++;
-            document.getElementById('progress-bar').style.width = (steps / 7 * 100) + '%';
+            document.getElementById('progress-bar').style.width = (steps / 5 * 100) + '%';
         }
 
         function toggleArea(el) {
@@ -345,7 +355,7 @@
         function renderSelectedPersons() {
             const container = document.getElementById('selected-persons');
             if (selectedPersons.length === 0) {
-                container.innerHTML = '<div class="empty-state">Nenhuma pessoa selecionada ainda.</div>';
+                container.innerHTML = '<div class="empty-state">Nenhuma pessoa selecionada ainda (opcional).</div>';
                 return;
             }
             container.innerHTML = selectedPersons.map(name =>
@@ -355,9 +365,8 @@
 
         function updatePersonsState() {
             document.getElementById('persons-count').textContent = selectedPersons.length;
-            document.getElementById('persons-counter').classList.toggle('complete', selectedPersons.length === MAX_PERSONS);
 
-            if (selectedPersons.length === MAX_PERSONS) {
+            if (selectedPersons.length > 0) {
                 buildPersonEvals();
                 document.getElementById('section-5').classList.remove('hidden');
             } else {
@@ -436,13 +445,13 @@
                     return;
                 }
             }
-            if (selectedPersons.length !== MAX_PERSONS) {
-                errorEl.innerHTML = '<div class="msg msg-error">Selecione exatamente 10 pessoas.</div>';
+            if (selectedPersons.length > MAX_PERSONS) {
+                errorEl.innerHTML = '<div class="msg msg-error">Você pode avaliar no máximo 10 pessoas.</div>';
                 return;
             }
             for (const p of selectedPersons) {
                 if (!evalData[p] || evalData[p].recomenda === undefined) {
-                    errorEl.innerHTML = '<div class="msg msg-error">Indique se recomenda ou não o trabalho de todas as 10 pessoas.</div>';
+                    errorEl.innerHTML = '<div class="msg msg-error">Para cada pessoa selecionada, indique se recomenda ou não o trabalho dela (ou remova a pessoa da lista).</div>';
                     return;
                 }
             }
