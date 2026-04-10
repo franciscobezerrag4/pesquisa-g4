@@ -86,11 +86,25 @@
                 <div class="step-num">2</div>
                 <div class="step-content">
                     <h2>Gerar Links da Pesquisa</h2>
-                    <p>Gere um link unico para cada pessoa. Cada link so pode ser usado uma vez.</p>
+                    <p>Cada link só pode ser usado uma vez. Escolha uma das opções:</p>
+
+                    <div style="background: #eef3fb; border-left: 4px solid #2F5496; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                        <strong style="color: #2F5496;">Opção 1: Gerar 1 link para cada pessoa da base</strong>
+                        <p style="margin: 6px 0 10px 0;">Cria automaticamente um link personalizado para cada funcionário cadastrado. Pessoas que já têm link não são duplicadas.</p>
+                        <button class="btn btn-primary" onclick="gerarTokensPessoas()">Gerar Links por Pessoa</button>
+                    </div>
+
+                    <div style="background: #f8f9fa; border-left: 4px solid #aaa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                        <strong style="color: #555;">Opção 2: Gerar uma quantidade qualquer de links anônimos</strong>
+                        <p style="margin: 6px 0 10px 0;">Útil se quiser distribuir links sem associar a pessoas específicas.</p>
+                        <div class="row">
+                            <input type="number" id="qty" min="1" max="500" value="50" placeholder="Qtd">
+                            <button class="btn btn-outline" onclick="gerarTokens()">Gerar Links Anônimos</button>
+                        </div>
+                    </div>
+
                     <div class="row">
-                        <input type="number" id="qty" min="1" max="500" value="50" placeholder="Qtd">
-                        <button class="btn btn-primary" onclick="gerarTokens()">Gerar Links</button>
-                        <a href="/admin/exportar-tokens" class="btn btn-outline">Exportar Links (Excel)</a>
+                        <a href="/admin/exportar-tokens" class="btn btn-success">Exportar Todos os Links (Excel)</a>
                     </div>
                     <div id="tokens-msg"></div>
                     <div id="links-container" style="display:none;">
@@ -158,6 +172,33 @@
                     const area = document.getElementById('links-area');
                     container.style.display = 'block';
                     area.innerHTML = data.links.map(l => '<a href="' + l + '" target="_blank">' + l + '</a>').join('');
+                    loadStats();
+                } else {
+                    el.innerHTML = '<div class="msg msg-error">' + data.error + '</div>';
+                }
+            });
+        }
+
+        function gerarTokensPessoas() {
+            if (!confirm('Vai gerar um link para cada pessoa da base (quem já tem link não é duplicado). Continuar?')) return;
+
+            const el = document.getElementById('tokens-msg');
+            el.innerHTML = '<div class="msg msg-success">Gerando links... aguarde.</div>';
+
+            fetch('/admin/gerar-tokens-pessoas', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const msg = data.criados + ' novos links criados (' + data.total_funcionarios + ' pessoas na base).';
+                    el.innerHTML = '<div class="msg msg-success">' + msg + ' Exporte o Excel para ver nome + link de cada pessoa.</div>';
+                    if (data.pessoas && data.pessoas.length > 0) {
+                        const container = document.getElementById('links-container');
+                        const area = document.getElementById('links-area');
+                        container.style.display = 'block';
+                        area.innerHTML = data.pessoas.map(p =>
+                            '<div style="padding:4px 0;"><strong>' + p.nome + '</strong><br><a href="' + p.link + '" target="_blank">' + p.link + '</a></div>'
+                        ).join('');
+                    }
                     loadStats();
                 } else {
                     el.innerHTML = '<div class="msg msg-error">' + data.error + '</div>';

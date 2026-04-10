@@ -109,13 +109,18 @@ def init_db():
 init_db()
 
 
-# Migration: add ano_entrada column if not exists
+# Migrations: add columns if not exist
 def migrate_db():
     conn = get_db()
     try:
         conn.execute('SELECT ano_entrada FROM respostas LIMIT 1')
     except sqlite3.OperationalError:
         conn.execute('ALTER TABLE respostas ADD COLUMN ano_entrada TEXT')
+        conn.commit()
+    try:
+        conn.execute('SELECT pessoa_nome FROM tokens LIMIT 1')
+    except sqlite3.OperationalError:
+        conn.execute('ALTER TABLE tokens ADD COLUMN pessoa_nome TEXT')
         conn.commit()
     conn.close()
 
@@ -289,11 +294,51 @@ def gerar_tokens():
     return jsonify({'success': True, 'tokens': tokens, 'links': links})
 
 
+@app.route('/admin/gerar-tokens-pessoas', methods=['POST'])
+@auth_required
+def gerar_tokens_pessoas():
+    conn = get_db()
+    funcs = conn.execute('SELECT nome FROM funcionarios ORDER BY nome').fetchall()
+
+    if not funcs:
+        conn.close()
+        return jsonify({'error': 'Nenhum funcionário cadastrado. Faça o upload da base primeiro.'}), 400
+
+    criados = []
+    for f in funcs:
+        nome = f['nome']
+        existente = conn.execute(
+            'SELECT token FROM tokens WHERE pessoa_nome = ?', (nome,)
+        ).fetchone()
+        if existente:
+            continue
+        token = secrets.token_urlsafe(16)
+        conn.execute(
+            'INSERT INTO tokens (token, pessoa_nome) VALUES (?, ?)', (token, nome)
+        )
+        criados.append({'nome': nome, 'token': token})
+
+    conn.commit()
+    conn.close()
+
+    base_url = request.host_url.rstrip('/')
+    result = [{'nome': c['nome'], 'link': f"{base_url}/pesquisa/{c['token']}"} for c in criados]
+
+    return jsonify({
+        'success': True,
+        'criados': len(criados),
+        'total_funcionarios': len(funcs),
+        'pessoas': result
+    })
+
+
 @app.route('/admin/exportar-tokens')
 @auth_required
 def exportar_tokens():
     conn = get_db()
-    tokens = conn.execute('SELECT token, usado, criado_em FROM tokens ORDER BY id').fetchall()
+    tokens = conn.execute(
+        'SELECT token, pessoa_nome, usado, criado_em FROM tokens ORDER BY pessoa_nome, id'
+    ).fetchall()
     conn.close()
 
     wb = Workbook()
@@ -303,7 +348,7 @@ def exportar_tokens():
     header_font = Font(bold=True, color='FFFFFF')
     header_fill = PatternFill(start_color='2F5496', end_color='2F5496', fill_type='solid')
 
-    headers = ['#', 'Link da Pesquisa', 'Status', 'Criado em']
+    headers = ['#', 'Pessoa', 'Link da Pesquisa', 'Status', 'Criado em']
     for col, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=h)
         cell.font = header_font
@@ -313,14 +358,16 @@ def exportar_tokens():
     base_url = request.host_url.rstrip('/')
     for i, t in enumerate(tokens, 1):
         ws.cell(row=i+1, column=1, value=i)
-        ws.cell(row=i+1, column=2, value=f"{base_url}/pesquisa/{t['token']}")
-        ws.cell(row=i+1, column=3, value='Respondido' if t['usado'] else 'Pendente')
-        ws.cell(row=i+1, column=4, value=t['criado_em'])
+        ws.cell(row=i+1, column=2, value=t['pessoa_nome'] or '(anônimo)')
+        ws.cell(row=i+1, column=3, value=f"{base_url}/pesquisa/{t['token']}")
+        ws.cell(row=i+1, column=4, value='Respondido' if t['usado'] else 'Pendente')
+        ws.cell(row=i+1, column=5, value=t['criado_em'])
 
     ws.column_dimensions['A'].width = 5
-    ws.column_dimensions['B'].width = 60
-    ws.column_dimensions['C'].width = 15
-    ws.column_dimensions['D'].width = 20
+    ws.column_dimensions['B'].width = 35
+    ws.column_dimensions['C'].width = 60
+    ws.column_dimensions['D'].width = 15
+    ws.column_dimensions['E'].width = 20
 
     filepath = os.path.join(EXPORT_FOLDER, 'tokens_pesquisa.xlsx')
     wb.save(filepath)
