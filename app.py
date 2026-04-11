@@ -15,6 +15,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 from dashboard import build_dashboard_data, DASHBOARD_HTML
+from restore import RESTORE_FORM_HTML, executar_restore
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
@@ -429,6 +430,37 @@ def admin_dados():
         'tokens_usados': tokens_usados,
         'respostas_total': respostas_total
     })
+
+
+@app.route('/admin/restore', methods=['GET', 'POST'])
+@auth_required
+def admin_restore():
+    result = None
+    if request.method == 'POST':
+        if not request.form.get('confirm'):
+            result = {'ok': False, 'msg': 'Você precisa confirmar antes de rodar o restore.'}
+        elif 'tokens' not in request.files or 'resultados' not in request.files:
+            result = {'ok': False, 'msg': 'Faltam arquivos (tokens e resultados são obrigatórios).'}
+        else:
+            tokens_file = request.files['tokens']
+            resultados_file = request.files['resultados']
+
+            tokens_path = os.path.join(UPLOAD_FOLDER, 'restore_tokens.xlsx')
+            resultados_path = os.path.join(UPLOAD_FOLDER, 'restore_resultados.xlsx')
+            tokens_file.save(tokens_path)
+            resultados_file.save(resultados_path)
+
+            conn = get_db()
+            try:
+                resumo = executar_restore(conn, tokens_path, resultados_path)
+                msg = '\n'.join(f'  {k}: {v}' for k, v in resumo.items())
+                result = {'ok': True, 'msg': f'Dados restaurados com sucesso:\n{msg}'}
+            except Exception as e:
+                result = {'ok': False, 'msg': f'Erro: {type(e).__name__}: {e}'}
+            finally:
+                conn.close()
+
+    return render_template_string(RESTORE_FORM_HTML, result=result)
 
 
 @app.route('/admin/dashboard')
