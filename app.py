@@ -10,9 +10,11 @@ import sqlite3
 import secrets
 from datetime import datetime
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file, session, Response
+from flask import Flask, render_template, render_template_string, request, jsonify, redirect, url_for, send_file, session, Response
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+from dashboard import build_dashboard_data, DASHBOARD_HTML
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
@@ -427,6 +429,30 @@ def admin_dados():
         'tokens_usados': tokens_usados,
         'respostas_total': respostas_total
     })
+
+
+@app.route('/admin/dashboard')
+@auth_required
+def admin_dashboard():
+    senioridade = request.args.get('senioridade', 'ambos')
+    if senioridade not in ('ambos', 'lideranca', 'ic'):
+        senioridade = 'ambos'
+    excluir_propria = request.args.get('excluir_propria') == '1'
+    anos_str = request.args.get('anos', '')
+    anos_sel = set(y.strip() for y in anos_str.split(',') if y.strip())
+
+    conn = get_db()
+    try:
+        data = build_dashboard_data(
+            conn,
+            senioridade=senioridade,
+            excluir_propria=excluir_propria,
+            anos_selecionados=anos_sel,
+        )
+    finally:
+        conn.close()
+
+    return render_template_string(DASHBOARD_HTML, data=data)
 
 
 @app.route('/admin/exportar-resultados')
